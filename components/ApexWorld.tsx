@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useUltronState } from "./useUltronState";
 import ApexHeroOrb, { type OrbState } from "./ApexHeroOrb";
 import ReasoningWebJs from "./ReasoningWeb";
 import ShaderBackgroundJs from "./ShaderBackground";
@@ -237,7 +238,13 @@ export default function ApexWorld() {
   // backdrop, the light-cast and the reasoning web's activity level.
   const [showState, setShowState] = useState<OrbState>("idle");
   const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const orbState: OrbState = showState;
+
+  // ULTRON live link: when the agent core is streaming, its real state
+  // (idle/thinking/speaking/standby) overrides the demo tap cycle.
+  const ultron = useUltronState();
+  const orbState: OrbState = ultron.connected && ultron.orbState
+    ? (ultron.orbState as OrbState)
+    : showState;
 
   const boost = () => {
     const next: OrbState = showState === "idle" ? "thinking" : showState === "thinking" ? "speaking" : "idle";
@@ -342,6 +349,20 @@ export default function ApexWorld() {
 
       {/* equalizer + STANDBY cluster */}
       <OrbStatusBar state={orbState} />
+      {ultron.connected && (
+        <div
+          style={{
+            position: "absolute", top: 12, right: 14, zIndex: 40,
+            fontFamily: "var(--font-mono, monospace)", fontSize: 11,
+            color: "rgba(13,210,255,0.9)", letterSpacing: "0.08em",
+            border: "1px solid rgba(13,210,255,0.35)", borderRadius: 999,
+            padding: "4px 10px", background: "rgba(8,17,31,0.55)",
+          }}
+          title={ultron.label}
+        >
+          ULTRON LINKED{ultron.label ? ` · ${ultron.label}` : ""}
+        </div>
+      )}
 
       {selected && <AgentOverview sel={selected} onClose={() => setSelected(null)} />}
     </div>
